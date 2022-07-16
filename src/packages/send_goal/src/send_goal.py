@@ -26,7 +26,7 @@ def movebase_client(x,y):
     goal.target_pose.pose.position.y = y
 
    # No rotation of the mobile base frame w.r.t. map frame
-    goal.target_pose.pose.orientation.w = 2
+    goal.target_pose.pose.orientation.w = 1
 
    # Sends the goal to the action server.
     client.send_goal(goal)
@@ -61,6 +61,7 @@ if __name__ == '__main__':
             result = movebase_client(goal['x'],goal['y'])
             if result:
                 rospy.loginfo("Goal execution done!")
+                rospy.sleep(5)
         text.close()
     except rospy.ROSInterruptException:
         rospy.loginfo("Navigation test finished.")
