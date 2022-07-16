@@ -1,8 +1,0 @@
-prefix=/home/alessandro/prog_ws/devel
-
-Name: send_goal
-Description: Description of send_goal
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

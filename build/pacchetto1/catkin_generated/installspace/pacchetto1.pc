@@ -1,8 +1,0 @@
-prefix=/home/alessandro/prog_ws/install
-
-Name: pacchetto1
-Description: Description of pacchetto1
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

@@ -1,8 +1,0 @@
-prefix=/home/alessandro/prog_ws/devel
-
-Name: turtlebot3_big_house
-Description: Description of turtlebot3_big_house
-Version: 1.3.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: roscpp std_msgs sensor_msgs geometry_msgs nav_msgs tf gazebo_ros
