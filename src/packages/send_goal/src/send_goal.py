@@ -2,14 +2,13 @@
 # license removed for brevity
 
 import rospy
-import rospkg
-
 # Brings in the SimpleActionClient
 import actionlib
 # Brings in the .action file and messages used by the move base action
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+import os
 
-
+goals_file = 'goals.txt'
 def movebase_client(x,y):
 
    # Create an action client called "move_base" with action definition file "MoveBaseAction"
@@ -46,24 +45,23 @@ if __name__ == '__main__':
     try:
        # Initializes a rospy node to let the SimpleActionClient publish and subscribe
         rospy.init_node('movebase_client_py')
-        rospack = rospkg.RosPack()
-        path = rospack.get_path('send_goal') + '/src/goals.txt'
-        text=open(path,'r')
+        dir_path = os.path.dirname(os.path.realpath(goals_file))
+        text = open(dir_path + '/' + goals_file, 'r')
         next(text)
         next(text)
         goal = {'x':0,'y':0}
-        
+
         while True:
             point = text.readline().split()
             if not point:
                 break
             goal['x'] = float(point[0])
             goal['y'] = float(point[1])
-            rospy.loginfo("Goal x: {}  y:{}".format(goal['x'],goal['y']))         
+            rospy.loginfo("Goal x: {}  y:{}".format(goal['x'],goal['y']))
             result = movebase_client(goal['x'],goal['y'])
             if result:
                 rospy.loginfo("Goal execution done!")
         text.close()
     except rospy.ROSInterruptException:
         rospy.loginfo("Navigation test finished.")
-            
+
