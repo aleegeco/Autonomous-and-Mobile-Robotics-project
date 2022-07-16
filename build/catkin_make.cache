@@ -1,0 +1,2 @@
+first_task:packages/explore:packages/gmcl:packages/map_merge:packages/send_goal:packages/turtlebot3:packages/turtlebot3_big_house:packages/turtlebot3_bringup:packages/turtlebot3_description:packages/turtlebot3_navigation:packages/turtlebot3_slam:prova_laser:second_task:third_task
+-DCATKIN_DEVEL_PREFIX=/home/alessandro/prog_ws/devel -DCMAKE_INSTALL_PREFIX=/home/alessandro/prog_ws/install -G Unix Makefiles

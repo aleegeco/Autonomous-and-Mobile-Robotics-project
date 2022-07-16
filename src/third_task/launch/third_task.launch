@@ -1,0 +1,45 @@
+<launch>
+    <arg name="model" value="burger"/>
+
+    <arg name="configuration_basename" default="turtlebot3_lds_2d.lua"/>
+
+    <arg name="x_pos" value="$(optenv x_pos -2.0)" />
+    <arg name="y_pos" value="$(optenv y_pos -2.0)" />
+    <arg name="z_pos" default="0.0" />
+
+    <arg name="map_file" default="$(find third_task)/map/complete_map.yaml"/>
+    <arg name="open_rviz" default="true"/>
+    <arg name="move_forward_only" default="false"/>
+
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find turtlebot3_big_house)/worlds/$(optenv gazebo_map turtlebot3_big_house.world)"/>
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="gui" value="true"/>
+        <arg name="headless" value="false"/>
+        <arg name="debug" value="false"/>
+    </include>
+
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">
+        <arg name="model" value="$(arg model)"/>
+    </include>
+
+    <include file="$(find turtlebot3_navigation)/launch/move_base.launch">
+        <arg name="model" value="$(arg model)"/>
+    </include>
+
+    <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
+
+
+    <include file="$(find gmcl)/launch/gmcl_diff.launch"/>
+
+    <group if="$(arg open_rviz)">
+        <node pkg="rviz" type="rviz" name="rviz" required="true"
+              args="-d $(find third_task)/rviz/third_task.rviz" />
+    </group>
+
+    <param name="robot_description" command="$(find xacro)/xacro $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model turtlebot3 -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -param robot_description" />
+
+
+</launch>

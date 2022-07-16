@@ -1,0 +1,8 @@
+prefix=/home/alessandro/prog_ws/devel
+
+Name: third_task
+Description: Description of third_task
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

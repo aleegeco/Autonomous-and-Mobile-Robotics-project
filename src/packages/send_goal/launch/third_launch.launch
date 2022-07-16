@@ -1,0 +1,21 @@
+<launch>
+
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find turtlebot3_big_house)/worlds/$(optenv gazebo_map turtlebot3_big_house.world)"/>
+
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="gui" value="true"/>
+        <arg name="headless" value="false"/>
+        <arg name="debug" value="false"/>
+
+    </include>
+
+    <include file="$(find turtlebot3_navigation)/launch/turtlebot3_navigation.launch">
+        <arg name="map_file" value="$(find third_task)/map/complete_map.yaml"/>
+    </include>
+
+
+
+
+</launch>

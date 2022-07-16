@@ -1,0 +1,8 @@
+prefix=/home/alessandro/prog_ws/devel
+
+Name: prova_laser
+Description: Description of prova_laser
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
