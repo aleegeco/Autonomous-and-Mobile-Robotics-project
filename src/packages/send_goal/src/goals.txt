@@ -1,6 +1,7 @@
 set of goals to be reached one after the other by the robot
 x y
-3.5 4.5
-2 5
-2 2
+3.5 4
+1 3
+1 -5
 0 -2
+-4 -6
