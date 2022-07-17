@@ -453,7 +453,7 @@ if _name_ == '_main_':  # this line of code is used to execute the code below if
 
             grid.PerformeSanitization()  # fill the cels of grid.discretized_grid with the correct amouth of energy that they have recived and update grid.AreaToSanitize, grid.SanitizedArea
 
-            grid.pub.publish(grid.SanitizedMap)
+            grid.pub.publish(grid.SanitizedMap) #
             grid.pub2.publish(grid.AreaToSanitize)
             grid.pub3.publish(grid.SanitizedArea)
             grid.pub4.publish(grid.WallsCells)
