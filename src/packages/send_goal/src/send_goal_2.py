@@ -6,15 +6,24 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Pose, Point, Quaternion
 from tf.transformations import quaternion_from_euler
-
+import os
 
 class MoveBaseSeq():
-
     def __init__(self):
         rospy.init_node('move_base_sequence')
-        points_seq = rospy.get_param('move_base_seq/p_seq')
+        goals_file = 'goals.txt'
+        dir_path = os.path.dirname(os.path.realpath(goals_file))
+        text = open(dir_path + '/' + goals_file, 'r')
+        points_seq = []
+        for line in text:
+            if line[0].isdecimal():
+                point = line.split()
+                points_seq.append(float(point[0]))
+                points_seq.append(float(point[1]))
+                points_seq.append(float(0))
+
         # Sono necessari solo gli angoli di imbardata (no rotazioni attorno agli assi x e y) in gradi:
-        yaweulerangles_seq = rospy.get_param('move_base_seq/yea_seq')
+        yaweulerangles_seq = [90,0,180,90,0,180,90]
         # Lista dei quaternioni desiderati:
         quat_seq = list()
         # Lista delle pose desiderate:
@@ -33,7 +42,7 @@ class MoveBaseSeq():
         #Crea un action client
         self.client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
         rospy.loginfo("Waiting for move_base action server...")
-        wait = self.client.wait_for_server(rospy.Duration(5.0))
+        wait = self.client.wait_for_server()
         if not wait:
             rospy.logerr("Action server not available!")
             rospy.signal_shutdown("Action server not available!")

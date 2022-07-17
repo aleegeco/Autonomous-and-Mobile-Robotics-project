@@ -57,7 +57,7 @@ if __name__ == '__main__':
                 break
             goal['x'] = float(point[0])
             goal['y'] = float(point[1])
-            rospy.loginfo("Goal x: {}  y:{}".format(goal['x'],goal['y']))
+            rospy.loginfo("Goal x:{}  y:{}".format(goal['x'],goal['y']))
             result = movebase_client(goal['x'],goal['y'])
             if result:
                 rospy.loginfo("Goal execution done!")
