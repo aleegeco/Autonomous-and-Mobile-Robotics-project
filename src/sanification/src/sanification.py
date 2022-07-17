@@ -14,6 +14,38 @@ import geometry_msgs.msg
 import roslib
 
 
+def map_visualization():
+    occupancy_grid = OccupancyGrid()
+
+    occupancy_grid.header.seq = 0
+    occupancy_grid.header.stamp.secs = 0
+    occupancy_grid.header.frame_id = "map"
+
+    occupancy_grid.info.resolution = 0.2
+    occupancy_grid.info.width = 384
+    occupancy_grid.info.height = 384
+    occupancy_grid.info.origin.position.x = -10
+    test.info.origin.position.y = -10
+    test.info.origin.position.z = 0
+
+    test.info.origin.orientation.x = 0
+    test.info.origin.orientation.y = 0
+    test.info.origin.orientation.z = 0
+    test.info.origin.orientation.w = 1
+
+    map = cv.imread('/home/marco/Documents/AMR/turtlebot_project_ws/src/second_launch/big_house_map.pgm', 0)
+    img = [0 for j in range(map.size)]
+
+    x = 0
+
+    for i in range(len(map) - 1, -1, -1):
+        for j in range(len(map)):
+            img[x] = int((map[i, j] / 255) * 100)
+            x += 1
+
+    test.data = img
+
+    return test
 def main():
     # create the node
     rospy.init_node('Visualization', anonymous=True)
@@ -38,11 +70,17 @@ def main():
     print(dir)
     # open the image
     img = cv2.imread(dir, cv2.IMREAD_GRAYSCALE)
-    map = img.copy()
+    image = img.copy()
 
-    cv2.imshow('image', img)
-    cv2.waitKey(0)
+    res = 0.2
+    map_offet = 10
 
+    dder_y = 9.2
+    adder_x = 10
+
+    center = [0, 0]
+    center[0] = int(round((adder_x + turtle_position[0]) / res))
+    center[1] = int(round((adder_y - turtle_position[1]) / res))
 
 
 

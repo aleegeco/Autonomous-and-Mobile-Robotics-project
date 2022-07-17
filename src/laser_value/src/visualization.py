@@ -85,18 +85,18 @@ def function():
         image[0, 0] = 80
         image[2, 0] = 70
 
-        for l in range(360):
+        for angle in range(360):
             d = 1
             while True:
-                x = int(round(d * np.cos(l)))
-                y = int(round(d * np.sin(l)))
-                if l <= 90 and image[(centre[1] - y), (centre[0] - x)] > 0:
+                x = np.rint(d * np.cos(angle))
+                y = np.rint(d * np.sin(angle))
+                if angle <= 90 and image[(centre[1] - y), (centre[0] - x)] > 0:
                     image[centre[1] - y, centre[0] - x] = 80
-                elif 90 < l <= 180 and image[centre[1] - y, centre[0] + x] > 0:
+                elif 90 < angle <= 180 and image[centre[1] - y, centre[0] + x] > 0:
                     image[centre[1] - y, centre[0] + x] = 80
-                elif 180 < l <= 270 and image[centre[1] + y, centre[0] + x] > 0:
+                elif 180 < angle <= 270 and image[centre[1] + y, centre[0] + x] > 0:
                     image[centre[1] + y, centre[0] + x] = 80
-                elif 270 < l <= 360 and image[centre[1] + y, centre[0] - x] > 0:
+                elif 270 < angle <= 360 and image[centre[1] + y, centre[0] - x] > 0:
                     image[centre[1] + y, centre[0] - x] = 80
                 else:
                     break
