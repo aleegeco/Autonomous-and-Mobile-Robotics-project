@@ -1,0 +1,5 @@
+<launch>
+
+<node pkg="laser_value" type="laser_value.py" name="laser_value" output="screen">
+    </node>
+</launch>
