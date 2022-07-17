@@ -3,7 +3,7 @@
 from cgi import test
 from itertools import tee
 import os
-import cv2.cv2
+import cv2
 import rospy
 import cv2 as cv
 import numpy as np
