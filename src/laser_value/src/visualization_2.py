@@ -3,10 +3,8 @@
 import numpy as np
 import cv2
 import os
-from visualizer import visibility
 import rospy
 import tf
-import geometry_msgs.msg
 import roslib
 from std_msgs.msg import *
 from geometry_msgs.msg import Point
@@ -16,41 +14,28 @@ from nav_msgs.msg import OccupancyGrid
 map = 'map_02.pgm'
 def UV_energy(x, y, turtle_x, turtle_y, res):
     Pi = 1e-4 # light power [Wm^2]
-    if x == turtle_x or y == turtle_y:
-        UV_dt = 0
-    else:
-        UV_dt = (Pi / (np.square((x - turtle_x)*res) * np.square((y - turtle_y))*res))
+    # if x == turtle_x or y == turtle_y:
+    #     UV_dt = 0
+    # else:
+    UV_dt = (Pi / (np.square((x - turtle_x)*res) * np.square((y - turtle_y))*res))
     return UV_dt
 
-def  transform_map_meters_to_grid_cells(coordinates, map_info):
-    x_cord = (coordinates[0] - float(map_info.origin.position.x)) / map_info.resolution
-    y_cord = (coordinates[1] - float(map_info.origin.position.y)) / map_info.resolution
-    cell = (int(x_cord), int(y_cord), 0)
-    # print(cell)
-    return cell
-
-def transform_grid_cells_to_map_meters(coordinates, map_info):
-    x_cord = float(coordinates[0] + .5) * map_info.resolution + float(map_info.origin.position.x)
-    #y_cord = float(cordinate[1] + .5) * map_info.resolution + float(map_info.origin.position.y)
-    y_cord = float(coordinates[1] + .5) * map_info.resolution + float(-9.2)
-    x_cord = round(x_cord, 3)
-    y_cord = round(-y_cord, 3)
-    cell = (x_cord, y_cord)
-    # pri
-    return cell
-# class Point_plus:
-# def map_grids(res, map, robot_pixel = 0)
-#     occupancy_cell = GridCells(header=rospy.Header())
-#     occupancy_cell.header.frame_id = 'map'
-#     occupancy_cell.cell_width = 0.15
-#     occupancy_cell.cell_height = 0.15
-#     point = Point()
-#     if robot_pixel != 0:
-#         temp = transform_grid_cells_to_map_meters(robot_pixel, occupancy.info)
-#         print(temp, robot_pixel[1], occupancy.info.resolution, res)
-#         point.x = temp[0]
-#         point.y = temp[1]
-#         occupancy_cell.cells.append(point)
+# def  transform_map_meters_to_grid_cells(coordinates, map_info):
+#     x_cord = (coordinates[0] - float(map_info.origin.position.x)) / map_info.resolution
+#     y_cord = (coordinates[1] - float(map_info.origin.position.y)) / map_info.resolution
+#     cell = (int(x_cord), int(y_cord), 0)
+#     # print(cell)
+#     return cell
+#
+# def transform_grid_cells_to_map_meters(coordinates, map_info):
+#     x_cord = float(coordinates[0] + .5) * map_info.resolution + float(map_info.origin.position.x)
+#     #y_cord = float(cordinate[1] + .5) * map_info.resolution + float(map_info.origin.position.y)
+#     y_cord = float(coordinates[1] + .5) * map_info.resolution + float(-9.2)
+#     x_cord = round(x_cord, 3)
+#     y_cord = round(-y_cord, 3)
+#     cell = (x_cord, y_cord)
+#     # pri
+#     return cell
 
 def map_occupancy(res, map, map_offset, robot_pixel = 0):
     occupancy = OccupancyGrid(header=rospy.Header())
@@ -128,14 +113,6 @@ def main():
         turtle_pixel[0] = int(round((adder_x + rel_pos_y) / res))
         turtle_pixel[1] = int(round((adder_y - rel_pos_x) / res))
 
-        # Color the center on the map
-        #image[center[1], center[0]] = 1
-        pippo = 5
-
-
-        # rospy.sleep(2)
-        # sanitization_map[0:10,0:10] += 1
-        # print(sanitization_map[0:10,0:10])
         k = 1e4
 
         for angle in range(360+1):
@@ -180,15 +157,9 @@ def main():
                         if sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] >= 255:
                             sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 255
                         # sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] += 3
-
                 else:
                     break
                 d += 1
-
-        # for k in range(np.shape(UV_store)[0]):
-        #     for j in range(np.shape(UV_store)[1]):
-        #         sanitization_map[k, j] = np.rint(K *  UV_store[k, j])
-
 
         visibility_occupancy, _ = map_occupancy(res, visibility_map, map_offset)
         pub_visibility.publish(visibility_occupancy)
@@ -197,11 +168,6 @@ def main():
         sanitization_occupancy, _ = map_occupancy(res, sanitization_map, map_offset)
         pub_sanification.publish(sanitization_occupancy)
         #rospy.loginfo('Publishing sanitization map')
-
-        # _, sanitization_occupancy_cell = map_occupancy(res, sanitization_map, map_offset, turtle_pixel)
-        # pub_occupancy_cell.publish(sanitization_occupancy_cell)
-        # #rospy.loginfo('Publishing sanitization grid cell map')
-
 
 if __name__ == "__main__":
     try:
