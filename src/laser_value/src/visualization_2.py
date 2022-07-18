@@ -15,13 +15,11 @@ from nav_msgs.msg import OccupancyGrid
 
 map = 'map_02.pgm'
 def UV_energy(x, y, turtle_x, turtle_y, res):
-    Pi = 1000  # light power [Wm^2]
+    Pi = 1e-4 # light power [Wm^2]
     if x == turtle_x or y == turtle_y:
         UV_dt = 0
     else:
         UV_dt = (Pi / (np.square((x - turtle_x)*res) * np.square((y - turtle_y))*res))
-        print(UV_dt)
-
     return UV_dt
 
 def  transform_map_meters_to_grid_cells(coordinates, map_info):
@@ -84,9 +82,6 @@ def map_occupancy(res, map, map_offset, robot_pixel = 0):
             x += 1
 
     occupancy.data = img
-
-
-
     return occupancy, None
 
 
@@ -108,7 +103,7 @@ def main():
     sanitization_map = img.copy()
     old_time = 0
 
-    UV = np.zeros((len(img), len(img)))
+    UV_store = np.zeros((len(img), len(img)))
     while not rospy.is_shutdown():
         time = 0
         dt = 1
@@ -138,42 +133,63 @@ def main():
         pippo = 5
 
 
-        rospy.sleep(2)
-        sanitization_map[0:10,0:10]+=1
-        print(sanitization_map[0:10,0:10])
+        # rospy.sleep(2)
+        # sanitization_map[0:10,0:10] += 1
+        # print(sanitization_map[0:10,0:10])
+        k = 1e4
 
-        for angle in range(360):
-            d = 1
+        for angle in range(360+1):
+            d = 1  # distanza dal robot
             while True:
-                x = int(np.rint(d * np.cos(angle)))
-                y = int(np.rint(d * np.sin(angle)))
+                x = int(np.rint(d * np.cos(angle)))  # distanza x da un pixel
+                y = int(np.rint(d * np.sin(angle)))  # distanza y da un pixel
+
                 if angle <= 90 and visibility_map[(turtle_pixel[1] - y), (turtle_pixel[0] - x)] > 0:
                     visibility_map[turtle_pixel[1] - y, turtle_pixel[0] - x] = 50
                     if  sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] < 255:
-                        sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] += 100*dt*UV_energy(x, y, turtle_pixel[0], turtle_pixel[1], res)
-                        # print(sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x])
+                        UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] += UV_energy(turtle_pixel[0] - x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res)
+                        sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] += np.rint(k * UV_energy(turtle_pixel[0] - x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res))
+                        if sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] >= 255:
+                            sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] = 255
+
+                        # sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] += 3
 
                 elif 90 < angle <= 180 and visibility_map[turtle_pixel[1] - y, turtle_pixel[0] + x] > 0:
                     visibility_map[turtle_pixel[1] - y, turtle_pixel[0] + x] = 50
                     if sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] < 255:
-                        # print(sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x])
-                        sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] += 100*dt*UV_energy(x, y, turtle_pixel[0], turtle_pixel[1], res)
+                        UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] += UV_energy(turtle_pixel[0] + x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res)
+                        sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] += np.rint(k * UV_energy(turtle_pixel[0] + x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res))
+                        if sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] >= 255:
+                            sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] = 255
+                        # sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] += 3
 
                 elif 180 < angle <= 270 and visibility_map[turtle_pixel[1] + y, turtle_pixel[0] + x] > 0:
                     visibility_map[turtle_pixel[1] + y, turtle_pixel[0] + x] = 50
                     if sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] < 255:
-                        sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] += 100*dt*UV_energy(x, y, turtle_pixel[0], turtle_pixel[1], res)
-                        # print(sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x])
+                        UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] += UV_energy(turtle_pixel[0] + x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res)
+                        sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] += np.rint(k * UV_energy(turtle_pixel[0] + x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res))
+                        if sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] >= 255 :
+                            sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] = 255
+                        # sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] += 3
 
                 elif 270 < angle <= 360 and visibility_map[turtle_pixel[1] + y, turtle_pixel[0] - x] > 0:
                     visibility_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 50
                     if  sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] < 255:
-                        # print(sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x])
-                        sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] += 100*dt*UV_energy(x, y, turtle_pixel[0], turtle_pixel[1], res)
+                        UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] += UV_energy(turtle_pixel[0] - x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res)
+                        sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] += np.rint(k * UV_energy(turtle_pixel[0] - x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res))
+                        if sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] >= 255:
+                            sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 255
+                        # sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] += 3
+
                 else:
                     break
                 d += 1
-        old_time = time
+
+        # for k in range(np.shape(UV_store)[0]):
+        #     for j in range(np.shape(UV_store)[1]):
+        #         sanitization_map[k, j] = np.rint(K *  UV_store[k, j])
+
+
         visibility_occupancy, _ = map_occupancy(res, visibility_map, map_offset)
         pub_visibility.publish(visibility_occupancy)
         #rospy.loginfo('Publishing visibility map')
