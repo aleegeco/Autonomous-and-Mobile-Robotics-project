@@ -17,7 +17,7 @@ def UV_energy(x, y, turtle_x, turtle_y, res):
     if x == turtle_x or y == turtle_y:
          UV_dt = 0
     else:
-        UV_dt = (Pi / (np.square((x - turtle_x)*res) * np.square((y - turtle_y))*res))
+        UV_dt = (Pi*1e-2 / (np.square((x - turtle_x)*res) * np.square((y - turtle_y))*res))
     return UV_dt
 
 def transform_map_meters_to_grid_cells(coordinates, map_info):
