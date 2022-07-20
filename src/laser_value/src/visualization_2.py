@@ -10,14 +10,15 @@ from std_msgs.msg import *
 from geometry_msgs.msg import Point
 from nav_msgs.msg import GridCells
 from nav_msgs.msg import OccupancyGrid
+import matplotlib.pyplot as plt
 
 map = 'map_02.pgm'
 def UV_energy(x, y, turtle_x, turtle_y, res):
     Pi = 1e-4 # light power [Wm^2]
-    if x == turtle_x or y == turtle_y:
+    if x == turtle_x and y == turtle_y:
          UV_dt = 0
     else:
-        UV_dt = (Pi*1e-2 / (np.square((x - turtle_x)*res) * np.square((y - turtle_y))*res))
+        UV_dt = Pi*1e-2 / (np.square((x - turtle_x)*res) + np.square((y - turtle_y)*res))
     return UV_dt
 
 def transform_map_meters_to_grid_cells(coordinates, map_info):
@@ -48,12 +49,7 @@ def map_occupancy(res, map, map_offset, robot_pixel = 0):
     occupancy_cell.header.frame_id = 'map'
     occupancy_cell.cell_width = 0.2
     occupancy_cell.cell_height = 0.2
-    point = Point()
-    if robot_pixel != 0:
-        temp = transform_grid_cells_to_map_meters(robot_pixel, occupancy.info)
-        point.x = temp[0]
-        point.y = temp[1]
-        occupancy_cell.cells.append(point)
+
 
     occupancy.info.resolution = res
     occupancy.info.width = len(map)
@@ -86,6 +82,7 @@ def main():
     pub_visibility = rospy.Publisher('/map/visibility', OccupancyGrid, queue_size=25)
     pub_sanification = rospy.Publisher('/map/sanification', OccupancyGrid, queue_size=25)
     pub_cells = rospy.Publisher('/my_grid_cells', GridCells, queue_size=25)
+    pub_goals = rospy.Publisher('san_goal', Point, queue_size=25)
 
     listener_tf = tf.TransformListener()
 
@@ -97,6 +94,32 @@ def main():
     sanitization_map = img.copy()
 
     UV_store = np.zeros((len(img), len(img)))
+    Map_matrix = np.zeros_like(UV_store)
+
+    plt.matshow(img)
+    plt.title('Map Image')
+
+    # assegna ai muri o alle parte esterne -1
+    for i in range(Map_matrix.shape[0]):
+        for j in range(Map_matrix.shape[1]):
+            if img[i, j] == 0 or img[i, j] == 205:
+                Map_matrix[i, j] = -1
+
+
+
+    # colorando la cucina lol da qui inizia la parte di briatore
+    for x in range(26,74):
+        for y in range(46,63):
+            if Map_matrix[y, x] != -1:
+                Map_matrix[y, x] = 2
+
+
+    plt.matshow(Map_matrix)
+    plt.title('Map Matrix')
+    plt.show()
+
+    count = 0
+
     while not rospy.is_shutdown():
         try:
             trans_pos = listener_tf.lookupTransform('/map', '/base_footprint', rospy.Time(0))[0]
@@ -111,14 +134,13 @@ def main():
         res = 0.2
         map_offset = 10
 
-        adder_y = 9.2
-        adder_x = 10
+        adder_y = 9.0
+        adder_x = 10.4
 
         # Initialize the center for the turtlebot
         turtle_pixel = [0, 0]
         turtle_pixel[0] = int(round((adder_x + rel_pos_y) / res))
         turtle_pixel[1] = int(round((adder_y - rel_pos_x) / res))
-
 
         for angle in range(360+1):
             d = 1  # distanza dal robot
@@ -131,9 +153,13 @@ def main():
                     if  sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] < 255:
                         UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] += UV_energy(turtle_pixel[0] - x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res)
                         #sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] += np.rint(k * UV_energy(turtle_pixel[0] - x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res))
-                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] >= (1e-3/3):
+                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] >= (1e-3/5):
                             sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] = 100
-                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] >= (2*1e-3/3):
+                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] >= (2*1e-3/5):
+                            sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] = 125
+                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] >= (3*1e-3/5):
+                            sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] = 150
+                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] >= (4*1e-3/5):
                             sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] = 200
                         if UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] >= 1e-3:
                             sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] = 255
@@ -142,9 +168,13 @@ def main():
                     visibility_map[turtle_pixel[1] - y, turtle_pixel[0] + x] = 50
                     if sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] < 255:
                         UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] += UV_energy(turtle_pixel[0] + x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res)
-                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] >= (1e-3/3):
+                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] >= (1e-3 / 5):
                             sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] = 100
-                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] >= (2*1e-3/3):
+                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] >= (2*1e-3 / 5):
+                            sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] = 125
+                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] >= (3*1e-3 / 5):
+                            sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] = 150
+                        if UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] >= (4 * 1e-3 / 5):
                             sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] = 200
                         if UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] >= 1e-3:
                             sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] = 255
@@ -154,9 +184,13 @@ def main():
                     visibility_map[turtle_pixel[1] + y, turtle_pixel[0] + x] = 50
                     if sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] < 255:
                         UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] += UV_energy(turtle_pixel[0] + x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res)
-                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] >= (1e-3/3):
+                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] >= (1e-3/5):
                             sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] = 100
-                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] >= (2*1e-3 / 3):
+                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] >= (2*1e-3/5):
+                            sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] = 125
+                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] >= (3*1e-3 / 5):
+                            sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] = 150
+                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] >= (3 * 1e-3 / 5):
                             sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] = 200
                         if UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] >= 1e-3:
                             sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] = 255
@@ -166,16 +200,34 @@ def main():
                     visibility_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 50
                     if  sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] < 255:
                         UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] += UV_energy(turtle_pixel[0] - x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res)
-                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] >= (1e-3/3):
+                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] >= (1e-3/5):
                             sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 100
-                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] >= (2*1e-3/3):
+                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] >= (2*1e-3/5):
+                            sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 125
+                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] >= (3*1e-3/5):
+                            sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 150
+                        if UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] >= (4*1e-3/5):
                             sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 200
                         if UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] >= 1e-3:
                             sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 255
+
                         #sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] += np.rint(k * UV_energy(turtle_pixel[0] - x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res))
                 else:
                     break
                 d += 1
+
+        # defining the sanitized parts of the map on the Map_matrix based on the value of the UV_store
+        for i in range(Map_matrix.shape[0]):
+            for j in range(Map_matrix.shape[1]):
+                if UV_store[i, j] >= 1e-3 :
+                    Map_matrix[i, j] = 1
+        '''
+        if count%10 == 0:
+            plt.matshow(Map_matrix)
+            plt.title('Map Matrix')
+            plt.show()
+        count += 1
+        '''
 
         visibility_occupancy, _ = map_occupancy(res, visibility_map, map_offset)
         pub_visibility.publish(visibility_occupancy)
@@ -186,8 +238,15 @@ def main():
         #rospy.loginfo('Publishing sanitization map')
 
 
-        _, cell_occupancy = map_occupancy(res, sanitization_map, map_offset, turtle_pixel )
+        _, cell_occupancy = map_occupancy(res, sanitization_map, map_offset)
         pub_cells.publish(cell_occupancy)
+
+        point = Point()
+        point.x = 3.0
+        point.y = 4.0
+        pub_goals.publish(point)
+        print(point)
+
 
 if __name__ == "__main__":
     try:
