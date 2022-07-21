@@ -45,11 +45,13 @@ def callback(point):
         if result:
             rospy.loginfo("Goal execution done!")
             rospy.sleep(5)
+            break
 
 def listener():
     rospy.Subscriber("san_goal", Point, callback)
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
+
 if __name__ == '__main__':
     rospy.init_node('listener_sanification_goal')
     listener()
