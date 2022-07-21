@@ -86,12 +86,11 @@ def main():
                   'bathroom': [[76,87], [46,70]],
                   'closet': [[51,61], [20,40]]}
 
-    rospy.init_node('Visualization', anonymous=True)
     rospy.loginfo('Starting node!!!')
 
     pub_visibility = rospy.Publisher('/map/visibility', OccupancyGrid, queue_size=25)
     pub_sanification = rospy.Publisher('/map/sanitization', OccupancyGrid, queue_size=25)
-    pub_goals = rospy.Publisher('san_goal', Point, queue_size=25)
+    pub_goals = rospy.Publisher('san_goal', Point, queue_size=30)
 
     listener_tf = tf.TransformListener()
 
@@ -128,9 +127,14 @@ def main():
     # plt.show()
 
     count = 0
+    wall_offset = 4
+
+
 
     for room in rooms_dict:
         # compute the pixel of center of the room
+        rospy.sleep(0.5)
+        print(room)
         room_center_pixel = [0, 0]
         room_center_pixel[0] = rooms_dict[room][0][0] + (rooms_dict[room][0][1]- rooms_dict[room][0][0])/2
         room_center_pixel[1] = rooms_dict[room][1][0] + (rooms_dict[room][1][1] - rooms_dict[room][1][0]) / 2
@@ -140,9 +144,9 @@ def main():
         point.x = temp[0]
         point.y = temp[1]
         pub_goals.publish(point)
+        rospy.sleep(0.5)
 
         # compute the corner of the room
-        wall_offset = 4
         room_corners = [[0,0],[0,0],[0,0],[0,0]]
         room_corners[0][0] = rooms_dict[room][0][0] + wall_offset
         room_corners[0][1] = rooms_dict[room][1][0] + wall_offset
@@ -152,15 +156,14 @@ def main():
         room_corners[2][1] = rooms_dict[room][1][1] - wall_offset
         room_corners[3][0] = rooms_dict[room][0][0] + wall_offset
         room_corners[3][1] = rooms_dict[room][1][1] - wall_offset
-        print(room_corners)
 
         for i in range(len(room_corners)):
             temp = transform_pixel_to_map_meters(room_corners[i], res, [-adder_x, -adder_y])
-            print(temp)
             point = Point()
             point.x = temp[0]
             point.y = temp[1]
             pub_goals.publish(point)
+            rospy.sleep(0.5)
 
     while not rospy.is_shutdown():
         try:
@@ -276,6 +279,7 @@ def main():
 
 if __name__ == "__main__":
     try:
+        rospy.init_node('Visualization', anonymous=True)
         main()
     except rospy.ROSInterruptException:
         pass
