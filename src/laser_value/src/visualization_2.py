@@ -101,10 +101,6 @@ def main():
 
     rooms_to_sanitize = [rooms_dict[line.strip('\n')] for line in rooms_file]
 
-
-
-    rospy.loginfo('Starting node!!!')
-
     pub_visibility = rospy.Publisher('/map/visibility', OccupancyGrid, queue_size=25)
     pub_sanification = rospy.Publisher('/map/sanitization', OccupancyGrid, queue_size=25)
     pub_goals = rospy.Publisher('san_goal', Point, queue_size=30)
@@ -280,6 +276,7 @@ def main():
 if __name__ == "__main__":
     try:
         rospy.init_node('Visualization', anonymous=True)
+        rospy.loginfo('Starting node!!!')
         main()
     except rospy.ROSInterruptException:
         pass
