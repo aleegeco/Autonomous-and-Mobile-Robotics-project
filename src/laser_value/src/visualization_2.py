@@ -100,7 +100,6 @@ def main():
     rooms_file = open(path_room, 'r')
 
     rooms_to_sanitize = [rooms_dict[line.strip('\n')] for line in rooms_file]
-    print(rooms_to_sanitize[0])
 
 
 
