@@ -18,24 +18,23 @@ def UV_energy(x, y, turtle_x, turtle_y, res):
     if x == turtle_x and y == turtle_y:
          UV_dt = 0
     else:
-        UV_dt = Pi*1e-2 / (np.square((x - turtle_x)*res) + np.square((y - turtle_y)*res))
+        UV_dt = Pi*1e-3 / (np.square((x - turtle_x)*res) + np.square((y - turtle_y)*res))
     return UV_dt
 
-def transform_map_meters_to_grid_cells(coordinates, map_info):
-    x_cord = (coordinates[0] - float(map_info.origin.position.x)) / map_info.resolution
-    y_cord = (coordinates[1] - float(map_info.origin.position.y)) / map_info.resolution
+def transform_map_meters_to_grid_cells(coordinates, res, offset):
+    x_cord = (coordinates[0] - float(offset)) / res
+    y_cord = (coordinates[1] - float(offset)) / res
     cell = (int(x_cord), int(y_cord), 0)
     return cell
 
 
-def transform_grid_cells_to_map_meters(coordinates, map_info):
-    x_cord = float(coordinates[0] + 0.5) * map_info.resolution + float(map_info.origin.position.x)
-    #y_cord = float(cordinate[1] + .5) * map_info.resolution + float(map_info.origin.position.y)
-    y_cord = float(coordinates[1] + 0.5) * map_info.resolution + float(map_info.origin.position.y)
+def transform_pixel_to_map_meters(coordinates, res, offset):
+    x_cord = float(coordinates[0] + 0.5) * res + float(offset[0])
+    y_cord = float(coordinates[1] + 0.5) * res + float(offset[1])
     x_cord = round(x_cord, 3)
     y_cord = round(-y_cord, 3)
-    cell = (x_cord, y_cord)
-    return cell
+    point = (x_cord, y_cord)
+    return point
 
 
 def map_occupancy(res, map, map_offset, robot_pixel = 0):
@@ -76,12 +75,22 @@ def map_occupancy(res, map, map_offset, robot_pixel = 0):
 
 
 def main():
+    res = 0.2
+    map_offset = 10
+
+    adder_y = 9.0
+    adder_x = 10.4
+
+    rooms_dict = {'kitchen': [[26,50], [20,45]],
+                  'living room': [[26,74], [46,63]],
+                  'bathroom': [[76,87], [46,70]],
+                  'closet': [[51,61], [20,40]]}
+
     rospy.init_node('Visualization', anonymous=True)
     rospy.loginfo('Starting node!!!')
 
     pub_visibility = rospy.Publisher('/map/visibility', OccupancyGrid, queue_size=25)
-    pub_sanification = rospy.Publisher('/map/sanification', OccupancyGrid, queue_size=25)
-    pub_cells = rospy.Publisher('/my_grid_cells', GridCells, queue_size=25)
+    pub_sanification = rospy.Publisher('/map/sanitization', OccupancyGrid, queue_size=25)
     pub_goals = rospy.Publisher('san_goal', Point, queue_size=25)
 
     listener_tf = tf.TransformListener()
@@ -96,8 +105,8 @@ def main():
     UV_store = np.zeros((len(img), len(img)))
     Map_matrix = np.zeros_like(UV_store)
 
-    plt.matshow(img)
-    plt.title('Map Image')
+    # plt.matshow(img)
+    # plt.title('Map Image')
 
     # assegna ai muri o alle parte esterne -1
     for i in range(Map_matrix.shape[0]):
@@ -106,19 +115,52 @@ def main():
                 Map_matrix[i, j] = -1
 
 
-
+    room_interval = [[26,50], [20,45]]
     # colorando la cucina lol da qui inizia la parte di briatore
-    for x in range(26,74):
-        for y in range(46,63):
+    for x in range(room_interval[0][0],room_interval[0][1]):
+        for y in range(room_interval[1][0], room_interval[1][1]):
             if Map_matrix[y, x] != -1:
                 Map_matrix[y, x] = 2
 
 
-    plt.matshow(Map_matrix)
-    plt.title('Map Matrix')
-    plt.show()
+    # plt.matshow(Map_matrix)
+    # plt.title('Map Matrix')
+    # plt.show()
 
     count = 0
+
+    for room in rooms_dict:
+        # compute the pixel of center of the room
+        room_center_pixel = [0, 0]
+        room_center_pixel[0] = rooms_dict[room][0][0] + (rooms_dict[room][0][1]- rooms_dict[room][0][0])/2
+        room_center_pixel[1] = rooms_dict[room][1][0] + (rooms_dict[room][1][1] - rooms_dict[room][1][0]) / 2
+
+        temp = transform_pixel_to_map_meters(room_center_pixel, res, [-adder_x, -adder_y])
+        point = Point()
+        point.x = temp[0]
+        point.y = temp[1]
+        pub_goals.publish(point)
+
+        # compute the corner of the room
+        wall_offset = 4
+        room_corners = [[0,0],[0,0],[0,0],[0,0]]
+        room_corners[0][0] = rooms_dict[room][0][0] + wall_offset
+        room_corners[0][1] = rooms_dict[room][1][0] + wall_offset
+        room_corners[1][0] = rooms_dict[room][0][1] - wall_offset
+        room_corners[1][1] = rooms_dict[room][1][0] + wall_offset
+        room_corners[2][0] = rooms_dict[room][0][1] - wall_offset
+        room_corners[2][1] = rooms_dict[room][1][1] - wall_offset
+        room_corners[3][0] = rooms_dict[room][0][0] + wall_offset
+        room_corners[3][1] = rooms_dict[room][1][1] - wall_offset
+        print(room_corners)
+
+        for i in range(len(room_corners)):
+            temp = transform_pixel_to_map_meters(room_corners[i], res, [-adder_x, -adder_y])
+            print(temp)
+            point = Point()
+            point.x = temp[0]
+            point.y = temp[1]
+            pub_goals.publish(point)
 
     while not rospy.is_shutdown():
         try:
@@ -130,12 +172,6 @@ def main():
 
         img = cv2.imread(fn, cv2.IMREAD_GRAYSCALE)
         visibility_map = img.copy()
-
-        res = 0.2
-        map_offset = 10
-
-        adder_y = 9.0
-        adder_x = 10.4
 
         # Initialize the center for the turtlebot
         turtle_pixel = [0, 0]
@@ -221,13 +257,13 @@ def main():
             for j in range(Map_matrix.shape[1]):
                 if UV_store[i, j] >= 1e-3 :
                     Map_matrix[i, j] = 1
-        '''
-        if count%10 == 0:
-            plt.matshow(Map_matrix)
-            plt.title('Map Matrix')
-            plt.show()
-        count += 1
-        '''
+
+        # if count%10 == 0:
+        #     plt.matshow(Map_matrix)
+        #     plt.title('Map Matrix')
+        #     plt.show()
+        # count += 1
+        #
 
         visibility_occupancy, _ = map_occupancy(res, visibility_map, map_offset)
         pub_visibility.publish(visibility_occupancy)
@@ -236,16 +272,6 @@ def main():
         sanitization_occupancy, _ = map_occupancy(res, sanitization_map, map_offset)
         pub_sanification.publish(sanitization_occupancy)
         #rospy.loginfo('Publishing sanitization map')
-
-
-        _, cell_occupancy = map_occupancy(res, sanitization_map, map_offset)
-        pub_cells.publish(cell_occupancy)
-
-        point = Point()
-        point.x = 3.0
-        point.y = 4.0
-        pub_goals.publish(point)
-        print(point)
 
 
 if __name__ == "__main__":
