@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+import random
 
 import numpy as np
 import cv2
@@ -28,7 +29,7 @@ def UV_energy(x, y, turtle_x, turtle_y, res):
     if x == turtle_x and y == turtle_y:
          UV_dt = 0
     else:
-        UV_dt = Pi*1e-3 / (np.square((x - turtle_x)*res) + np.square((y - turtle_y)*res))
+        UV_dt = Pi*2e-3 / (np.square((x - turtle_x)*res) + np.square((y - turtle_y)*res))
     return UV_dt
 
 def transform_map_meters_to_grid_cells(coordinates, res, offset):
@@ -39,8 +40,8 @@ def transform_map_meters_to_grid_cells(coordinates, res, offset):
 
 
 def transform_pixel_to_map_meters(coordinates, res, offset):
-    x_cord = float(coordinates[0] + 0.5) * res + float(offset[0])
-    y_cord = float(coordinates[1] + 0.5) * res + float(offset[1])
+    x_cord = float(coordinates[0]) * res + float(offset[0])
+    y_cord = float(coordinates[1]) * res + float(offset[1])
     x_cord = round(x_cord, 3)
     y_cord = round(-y_cord, 3)
     point = (x_cord, y_cord)
@@ -91,7 +92,7 @@ def main():
     adder_y = 9.0
     adder_x = 10.4
 
-    tresh = 0.15
+    tresh = 0.1
 
     # directory
     dir_map = os.path.dirname(os.path.realpath(map))
@@ -117,27 +118,15 @@ def main():
     UV_store = np.zeros((len(img), len(img)))
     Map_matrix = np.zeros_like(UV_store)
 
-#    plt.matshow(img)
-#    plt.title('Map Image')
-
     # assegna ai muri o alle parte esterne -1
     for i in range(Map_matrix.shape[0]):
         for j in range(Map_matrix.shape[1]):
             if img[i, j] == 0 or img[i, j] == 205:
                 Map_matrix[i, j] = -1
 
-    room_interval = [[15,25], [42,64]]
-    # colorando la cucina lol da qui inizia la parte di briatore
-    for x in range(room_interval[0][0],room_interval[0][1]):
-        for y in range(room_interval[1][0], room_interval[1][1]):
-            if Map_matrix[y, x] != -1:
-                Map_matrix[y, x] = 2
 
-#    plt.matshow(Map_matrix)
-#    plt.title('Map Matrix')
-#    plt.show()
 
-    wall_offset = 4
+    wall_offset = 3
     for room in range(len(rooms_to_sanitize)):
         # compute the pixel of center of the room
         rospy.sleep(0.2)
@@ -177,16 +166,16 @@ def main():
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue
 
-            rel_pos_y = round(trans_pos[0], 2)
-            rel_pos_x = round(trans_pos[1], 2)
+            rel_pos_x = round(trans_pos[0], 2)
+            rel_pos_y = round(trans_pos[1], 2)
 
             img = cv2.imread(path_map, cv2.IMREAD_GRAYSCALE)
             visibility_map = img.copy()
 
             # Initialize the center for the turtlebot
             turtle_pixel = [0, 0]
-            turtle_pixel[0] = int(round((adder_x + rel_pos_y) / res))
-            turtle_pixel[1] = int(round((adder_y - rel_pos_x) / res))
+            turtle_pixel[0] = int(round((adder_x + rel_pos_x) / res))
+            turtle_pixel[1] = int(round((adder_y - rel_pos_y) / res))
 
             for angle in range(360+1):
                 d = 1  # distanza dal robot
@@ -267,6 +256,7 @@ def main():
                     if UV_store[i, j] >= 1e-3 :
                         Map_matrix[i, j] = 1
 
+
             visibility_occupancy, _ = map_occupancy(res, visibility_map, map_offset)
             pub_visibility.publish(visibility_occupancy)
             #rospy.loginfo('Publishing visibility map')
@@ -275,9 +265,54 @@ def main():
             pub_sanification.publish(sanitization_occupancy)
             #rospy.loginfo('Publishing sanitization map')
 
-            if abs(rel_pos_x - point.x) < tresh and abs(rel_pos_y - point.y) < tresh:
-                print('Switching room')
-                break
+
+            if abs(rel_pos_y - point.y) < tresh and abs(rel_pos_x - point.x) < tresh:
+                range_x_min = rooms_to_sanitize[room][0][0]
+                range_x_max = rooms_to_sanitize[room][0][1]
+                range_y_min = rooms_to_sanitize[room][1][0]
+                range_y_max = rooms_to_sanitize[room][1][1]
+
+
+                pixel_to_sanitize = []
+
+                for i in range(range_x_min, range_x_max):
+                    for j in range(range_y_min, range_y_max):
+                        if Map_matrix[j, i] == -1:
+                            pass
+                        elif Map_matrix[j, i] != 1:
+                            pixel_to_sanitize.append([i, j])
+
+
+
+                if not pixel_to_sanitize:
+                    print('Switching room')
+                    break
+                else:
+                    print('Need more sanification')
+
+                    objective_pixel = random.choice(pixel_to_sanitize)
+                    if abs(objective_pixel[0] - range_x_min) <= 3:
+                        objective_pixel[0] += 3
+                    elif abs(objective_pixel[0] - range_x_max) <= 3:
+                        objective_pixel[0] -= 3
+                    if abs(objective_pixel [1] - range_y_min) <= 3:
+                        objective_pixel[1] += 3
+                    elif abs(objective_pixel[1] - range_y_max) <= 3:
+                        objective_pixel[1] -= 3
+                    print('objective pixel {}'.format(objective_pixel))
+
+                    objective_point = transform_pixel_to_map_meters(objective_pixel, res, [-adder_x, -adder_y])
+                    print('objective point {}'.format(objective_point))
+
+                    point = Point()
+                    point.x = objective_point[0]
+                    point.y = objective_point[1]
+                    pub_goals.publish(point)
+                    rospy.sleep(0.2)
+
+                    # plt.matshow(Map_matrix)
+                    # plt.title('Map Image')
+                    # plt.show()
 
 if __name__ == "__main__":
     try:

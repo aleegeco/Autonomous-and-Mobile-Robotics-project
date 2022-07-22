@@ -31,7 +31,7 @@ def movebase_client(point):
         return client.get_result()
 
 def callback(point):
-    rospy.loginfo(rospy.get_caller_id() + "\n I heard %s", point)
+    rospy.loginfo(rospy.get_caller_id() + "\n New goal x = %s y = %s", point.x, point.y)
     while True:
         result = movebase_client(point)
 
@@ -47,5 +47,6 @@ def listener():
 
 if __name__ == '__main__':
     rospy.init_node('listener_sanification_goal', anonymous=True)
+    rospy.loginfo('Starting node!!!')
     listener()
 
