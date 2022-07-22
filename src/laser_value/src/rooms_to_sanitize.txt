@@ -1,3 +1,6 @@
-closet 2
-corridor
+bathroom
+living room 2
+living room
 kitchen
+closet
+closet 2
