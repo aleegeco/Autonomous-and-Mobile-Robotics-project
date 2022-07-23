@@ -9,7 +9,7 @@
     <arg name="move_forward_only" value="$(arg move_forward_only)"/>
   </include>
   
-  <include file="$(find turtlebot3_navigation)/launch/amcl.launch"/>
+  <include file="$(find gmcl)/launch/gmcl_diff.launch"/>
 
   <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
   

@@ -29,7 +29,7 @@ def UV_energy(x, y, turtle_x, turtle_y, res):
     if x == turtle_x and y == turtle_y:
          UV_dt = 0
     else:
-        UV_dt = Pi*2e-3 / (np.square((x - turtle_x)*res) + np.square((y - turtle_y)*res))
+        UV_dt = Pi*5e-3 / (np.square((x - turtle_x)*res) + np.square((y - turtle_y)*res))
     return UV_dt
 
 def transform_map_meters_to_grid_cells(coordinates, res, offset):
@@ -118,13 +118,10 @@ def main():
     UV_store = np.zeros((len(img), len(img)))
     Map_matrix = np.zeros_like(UV_store)
 
-    # assegna ai muri o alle parte esterne -1
     for i in range(Map_matrix.shape[0]):
         for j in range(Map_matrix.shape[1]):
             if img[i, j] == 0 or img[i, j] == 205:
                 Map_matrix[i, j] = -1
-
-
 
     wall_offset = 3
     for room in range(len(rooms_to_sanitize)):
@@ -186,8 +183,8 @@ def main():
                     if angle <= 90 and visibility_map[(turtle_pixel[1] - y), (turtle_pixel[0] - x)] > 0:
                         visibility_map[turtle_pixel[1] - y, turtle_pixel[0] - x] = 50
                         if  sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] < 255:
-                            UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] += UV_energy(turtle_pixel[0] - x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res)
-                            #sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] += np.rint(k * UV_energy(turtle_pixel[0] - x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res))
+                            UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] += \
+                                UV_energy(turtle_pixel[0] - x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res)
                             if UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] >= (1e-3/5):
                                 sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] - x] = 100
                             if UV_store[turtle_pixel[1] - y, turtle_pixel[0] - x] >= (2*1e-3/5):
@@ -202,7 +199,8 @@ def main():
                     elif 90 < angle <= 180 and visibility_map[turtle_pixel[1] - y, turtle_pixel[0] + x] > 0:
                         visibility_map[turtle_pixel[1] - y, turtle_pixel[0] + x] = 50
                         if sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] < 255:
-                            UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] += UV_energy(turtle_pixel[0] + x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res)
+                            UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] += \
+                                UV_energy(turtle_pixel[0] + x, turtle_pixel[1] - y, turtle_pixel[0], turtle_pixel[1], res)
                             if UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] >= (1e-3 / 5):
                                 sanitization_map[turtle_pixel[1] - y, turtle_pixel[0] + x] = 100
                             if UV_store[turtle_pixel[1] - y, turtle_pixel[0] + x] >= (2*1e-3 / 5):
@@ -218,7 +216,8 @@ def main():
                     elif 180 < angle <= 270 and visibility_map[turtle_pixel[1] + y, turtle_pixel[0] + x] > 0:
                         visibility_map[turtle_pixel[1] + y, turtle_pixel[0] + x] = 50
                         if sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] < 255:
-                            UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] += UV_energy(turtle_pixel[0] + x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res)
+                            UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] += \
+                                UV_energy(turtle_pixel[0] + x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res)
                             if UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] >= (1e-3/5):
                                 sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] + x] = 100
                             if UV_store[turtle_pixel[1] + y, turtle_pixel[0] + x] >= (2*1e-3/5):
@@ -234,7 +233,8 @@ def main():
                     elif 270 < angle <= 360 and visibility_map[turtle_pixel[1] + y, turtle_pixel[0] - x] > 0:
                         visibility_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 50
                         if  sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] < 255:
-                            UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] += UV_energy(turtle_pixel[0] - x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res)
+                            UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] += \
+                                UV_energy(turtle_pixel[0] - x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res)
                             if UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] >= (1e-3/5):
                                 sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 100
                             if UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] >= (2*1e-3/5):
@@ -245,7 +245,6 @@ def main():
                                 sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 200
                             if UV_store[turtle_pixel[1] + y, turtle_pixel[0] - x] >= 1e-3:
                                 sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] = 255
-                            #sanitization_map[turtle_pixel[1] + y, turtle_pixel[0] - x] += np.rint(k * UV_energy(turtle_pixel[0] - x, turtle_pixel[1] + y, turtle_pixel[0], turtle_pixel[1], res))
                     else:
                         break
                     d += 1
@@ -256,15 +255,11 @@ def main():
                     if UV_store[i, j] >= 1e-3 :
                         Map_matrix[i, j] = 1
 
-
             visibility_occupancy, _ = map_occupancy(res, visibility_map, map_offset)
             pub_visibility.publish(visibility_occupancy)
-            #rospy.loginfo('Publishing visibility map')
 
             sanitization_occupancy, _ = map_occupancy(res, sanitization_map, map_offset)
             pub_sanification.publish(sanitization_occupancy)
-            #rospy.loginfo('Publishing sanitization map')
-
 
             if abs(rel_pos_y - point.y) < tresh and abs(rel_pos_x - point.x) < tresh:
                 range_x_min = rooms_to_sanitize[room][0][0]
@@ -272,17 +267,13 @@ def main():
                 range_y_min = rooms_to_sanitize[room][1][0]
                 range_y_max = rooms_to_sanitize[room][1][1]
 
-
                 pixel_to_sanitize = []
-
                 for i in range(range_x_min, range_x_max):
                     for j in range(range_y_min, range_y_max):
                         if Map_matrix[j, i] == -1:
                             pass
                         elif Map_matrix[j, i] != 1:
                             pixel_to_sanitize.append([i, j])
-
-
 
                 if not pixel_to_sanitize:
                     print('Switching room')
@@ -299,20 +290,14 @@ def main():
                         objective_pixel[1] += 3
                     elif abs(objective_pixel[1] - range_y_max) <= 3:
                         objective_pixel[1] -= 3
-                    print('objective pixel {}'.format(objective_pixel))
 
                     objective_point = transform_pixel_to_map_meters(objective_pixel, res, [-adder_x, -adder_y])
-                    print('objective point {}'.format(objective_point))
 
                     point = Point()
                     point.x = objective_point[0]
                     point.y = objective_point[1]
                     pub_goals.publish(point)
                     rospy.sleep(0.2)
-
-                    # plt.matshow(Map_matrix)
-                    # plt.title('Map Image')
-                    # plt.show()
 
 if __name__ == "__main__":
     try:
