@@ -1,6 +1,3 @@
-bathroom
-living room 2
-living room
 kitchen
+bathroom
 closet
-closet 2
