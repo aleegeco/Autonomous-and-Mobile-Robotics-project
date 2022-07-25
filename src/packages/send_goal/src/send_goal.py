@@ -49,7 +49,7 @@ if __name__ == '__main__':
         text = open(dir_path + '/' + goals_file, 'r')
         next(text)
         next(text)
-        goal = {'x':0,'y':0}
+        goal = {'x' : 0, 'y' : 0}
 
         while True:
             point = text.readline().split()
