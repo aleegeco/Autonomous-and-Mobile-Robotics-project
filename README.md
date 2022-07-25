@@ -8,7 +8,7 @@ In order to run it, do the following command in the project folder
 ```
 catkin_make
 ```
-source the package installation:
+source the package installation folder
 ```
 source devel/setup.bash
 ```
